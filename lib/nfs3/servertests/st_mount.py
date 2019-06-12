@@ -62,7 +62,7 @@ def testMountNull_v1(t, env):
 
     FLAGS: mount nfsv3
     DEPEND:
-    CODE: MOUNT_NULL
+    CODE: MOUNT_NULL_V1
     """
     res = env.mc_v1.mount_null()
     print "MNT_NULL RESULTS:", res, "\n"
@@ -73,7 +73,7 @@ def testMountMnt_v1(t, env):
 
     FLAGS: mount nfsv3
     DEPEND: MOUNT_NULL
-    CODE: MOUNT_MNT
+    CODE: MOUNT_MNT_V1
     """
     res = env.mc_v1.mount_mnt('/' + '/'.join(env.mc.opts.path[:-1]))
     print "MNT RESULTS:", res, "\n"
@@ -84,7 +84,7 @@ def testMountDump_v1(t, env):
 
     FLAGS: mount nfsv3
     DEPEND: MOUNT_NULL
-    CODE: MOUNT_DUMP
+    CODE: MOUNT_DUMP_V1
     """
     res = env.mc_v1.mount_dump()
     print "DUMP results: ", res, "\n"
@@ -95,7 +95,7 @@ def testMountExport_v1(t, env):
 
     FLAGS: mount nfsv3
     DEPEND: MOUNT_NULL
-    CODE: MOUNT_EXPORT
+    CODE: MOUNT_EXPORT_V1
     """
     c = env.rootclient
     res = env.mc_v1.mount_export()
