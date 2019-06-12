@@ -13,12 +13,14 @@ import struct
 import socket
 import sys
 
-AuthSys = rpc.SecAuthSys(0,'jupiter',103558,100,[])
+AuthSys = rpc.SecAuthSys(0, 'jupiter', 103558, 100, [])
+
 
 class MountException(rpc.RPCError):
     pass
 
-#A MOUNT procedure returned an error
+
+# A MOUNT procedure returned an error
 class BadMountRes(MountException):
     def __init__(self, errcode, msg=None):
         self.errcode = errcode
@@ -26,14 +28,15 @@ class BadMountRes(MountException):
             self.msg = msg + ': '
         else:
             self.msg = ''
+
     def __str__(self):
         return self.msg + "should return MNT3_OK, instead got %s" % \
-            (mountstat3[self.errcode])
+               (mountstat3[self.errcode])
 
 
 class MountClient(rpc.RPCClient):
     def __init__(self, id, host='localhost', port=300, homedir=['pynfs'],
-            sec_list=[AuthSys], opts = None):
+                 sec_list=[AuthSys], opts=None):
         self.ipv6 = getattr(opts, 'ipv6', False)
         self.packer = MOUNTPacker()
         self.unpacker = MOUNTUnpacker('')
@@ -41,11 +44,11 @@ class MountClient(rpc.RPCClient):
         self.id = id
         self.opts = opts
         # Mounting generally requires a low port
-        #uselowport = getattr(opts, "secure", False)
+        # uselowport = getattr(opts, "secure", False)
         uselowport = True
         rpc.RPCClient.__init__(self, host, port, program=MOUNT_PROGRAM,
-            version=MOUNT_V3, sec_list=sec_list,
-            uselowport=uselowport,ipv6=self.ipv6)
+                               version=MOUNT_V3, sec_list=sec_list,
+                               uselowport=uselowport, ipv6=self.ipv6)
         self.server_address = (host, port)
         print "seclist = ", sec_list
 
@@ -112,10 +115,13 @@ class MountClient(rpc.RPCClient):
 
     def mount_null(self):
         return self.mount_call(mount_const.MOUNTPROC3_NULL)
+
     def mount_mnt(self, path):
         return self.mount_call(mount_const.MOUNTPROC3_MNT, path)
+
     def mount_dump(self):
         return self.mount_call(mount_const.MOUNTPROC3_DUMP)
+
     # XXX Ops 3 and 4
     def mount_export(self):
         return self.mount_call(mount_const.MOUNTPROC3_EXPORT)
