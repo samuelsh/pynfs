@@ -64,7 +64,7 @@ def testMountNull_v1(t, env):
     DEPEND:
     CODE: MOUNT_NULL_V1
     """
-    res = env.mc_v1.mount_null()
+    res = env.mc_v1.mount_null_v1()
     print "MNT_NULL RESULTS:", res, "\n"
 
 
@@ -75,7 +75,7 @@ def testMountMnt_v1(t, env):
     DEPEND: MOUNT_NULL
     CODE: MOUNT_MNT_V1
     """
-    res = env.mc_v1.mount_mnt('/' + '/'.join(env.mc.opts.path[:-1]))
+    res = env.mc_v1.mount_mnt_v1('/' + '/'.join(env.mc.opts.path[:-1]))
     print "MNT RESULTS:", res, "\n"
 
 
@@ -86,7 +86,7 @@ def testMountDump_v1(t, env):
     DEPEND: MOUNT_NULL
     CODE: MOUNT_DUMP_V1
     """
-    res = env.mc_v1.mount_dump()
+    res = env.mc_v1.mount_dump_v1()
     print "DUMP results: ", res, "\n"
 
 
@@ -98,5 +98,5 @@ def testMountExport_v1(t, env):
     CODE: MOUNT_EXPORT_V1
     """
     c = env.rootclient
-    res = env.mc_v1.mount_export()
+    res = env.mc_v1.mount_export_v1()
     print "EXPORT results: ", res, "\n"

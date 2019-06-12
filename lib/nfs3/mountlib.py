@@ -124,8 +124,20 @@ class MountClient(rpc.RPCClient):
 
     # XXX Ops 3 and 4
     def mount_export(self):
-        return self.mount_call(mount_const.MOUNTPROC3_EXPORT)
+        return self.mount_call(mount_const.MOUNTPROC_EXPORT)
 
+    def mount_null_v1(self):
+        return self.mount_call(mount_const.MOUNTPROC_NULL)
+
+    def mount_mnt_v1(self, path):
+        return self.mount_call(mount_const.MOUNTPROC_MNT, path)
+
+    def mount_dump_v1(self):
+        return self.mount_call(mount_const.MOUNTPROC_DUMP)
+
+    # XXX Ops 3 and 4
+    def mount_export_v1(self):
+        return self.mount_call(mount_const.MOUNTPROC_EXPORT)
     """
     UTILITY FUNCTIONS
     """
