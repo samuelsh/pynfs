@@ -527,7 +527,7 @@ def printresults(tests, opts, file=None):
 
     #Appending nfsv3 expected failures
     # CREATE7: Fails unless vfs.nfsrv.create_attributes_ids_enabled = 1
-    TEMP_FAILURES.extend(['MKNOD1', 'CREATE7'])
+    TEMP_FAILURES.extend(['MKNOD1', 'CREATE7', 'MOUNT_MNT_V1', 'MOUNT_DUMP_V1'])
 
     TEMP_WARNINGS = ['LOCK8c', 'MKBLK', 'MKCHAR', 'RD12', 'SATT2c',
     'SATT9']
