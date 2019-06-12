@@ -36,7 +36,7 @@ class BadMountRes(MountException):
 
 class MountClient(rpc.RPCClient):
     def __init__(self, id, host='localhost', port=300, homedir=['pynfs'],
-                 sec_list=[AuthSys], opts=None):
+                 sec_list=[AuthSys], opts=None, mount_version=MOUNT_V3):
         self.ipv6 = getattr(opts, 'ipv6', False)
         self.packer = MOUNTPacker()
         self.unpacker = MOUNTUnpacker('')
@@ -47,7 +47,7 @@ class MountClient(rpc.RPCClient):
         # uselowport = getattr(opts, "secure", False)
         uselowport = True
         rpc.RPCClient.__init__(self, host, port, program=MOUNT_PROGRAM,
-                               version=MOUNT_V3, sec_list=sec_list,
+                               version=mount_version, sec_list=sec_list,
                                uselowport=uselowport, ipv6=self.ipv6)
         self.server_address = (host, port)
         print "seclist = ", sec_list

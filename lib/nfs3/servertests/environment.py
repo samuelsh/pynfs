@@ -41,6 +41,8 @@ class Environment(testmod.Environment):
         
         self.mc = MountClient('client1_pid%i' % os.getpid(), opts.server,
             mountport, opts.path, sec_list=[self.sec1], opts=opts)
+        self.mc_v1 = MountClient('client2_pid%i' % os.getpid(), opts.server,
+                              mountport, opts.path, sec_list=[self.sec1], opts=opts, mount_version=MOUNT_V1)
         self.rootclient = MountClient('client1_pid%i' % os.getpid(),
             opts.server, mountport, opts.path, sec_list=[rootsec], opts=opts)
 
