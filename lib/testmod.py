@@ -17,34 +17,35 @@ from traceback import format_exception
 
 if 'sum' not in __builtins__:
     def sum(seq, start=0):
-        return reduce(lambda x,y: x+y, seq, start)
+        return reduce(lambda x, y: x + y, seq, start)
 
 # Possible outcomes
-TEST_NOTRUN  = 0    # Not yet considered
-TEST_RUNNING = 1    # Test actually running
-TEST_WAIT    = 2    # Waiting for dependencies to run
-TEST_OMIT    = 3    # Test skipped
-TEST_FAIL    = 4    # Test failed
-TEST_NOTSUP  = 5    # Counts as WARN, but considered a failed dependency
-TEST_WARN    = 6    # Technically a PASS, but there was a better way
-TEST_PASS    = 7    # Test passed
-TEST_TOOLONG = 8    # Test succeeded, but took too long!
-TEST_TOOLONGFAIL = 9 # Test failed AND took too long!
-DEP_FUNCT    = 100  # Used for depency functions
+TEST_NOTRUN = 0  # Not yet considered
+TEST_RUNNING = 1  # Test actually running
+TEST_WAIT = 2  # Waiting for dependencies to run
+TEST_OMIT = 3  # Test skipped
+TEST_FAIL = 4  # Test failed
+TEST_NOTSUP = 5  # Counts as WARN, but considered a failed dependency
+TEST_WARN = 6  # Technically a PASS, but there was a better way
+TEST_PASS = 7  # Test passed
+TEST_TOOLONG = 8  # Test succeeded, but took too long!
+TEST_TOOLONGFAIL = 9  # Test failed AND took too long!
+DEP_FUNCT = 100  # Used for depency functions
+
 
 class Result(object):
-    outcome_names = { TEST_NOTRUN : "NOT RUN",
-                      TEST_RUNNING: "RUNNING",
-                      TEST_WAIT   : "WAITING TO RUN",
-                      TEST_OMIT   : "OMIT",
-                      TEST_FAIL   : "FAILURE",
-                      TEST_NOTSUP : "UNSUPPORTED",
-                      TEST_WARN   : "WARNING",
-                      TEST_PASS   : "PASS",
-                      TEST_TOOLONG: "TOOLONG",
-                      TEST_TOOLONGFAIL: "TOOLONGFAIL",
-                      DEP_FUNCT   : "DEPENDENCY FUNCTION"
-                      }
+    outcome_names = {TEST_NOTRUN: "NOT RUN",
+                     TEST_RUNNING: "RUNNING",
+                     TEST_WAIT: "WAITING TO RUN",
+                     TEST_OMIT: "OMIT",
+                     TEST_FAIL: "FAILURE",
+                     TEST_NOTSUP: "UNSUPPORTED",
+                     TEST_WARN: "WARNING",
+                     TEST_PASS: "PASS",
+                     TEST_TOOLONG: "TOOLONG",
+                     TEST_TOOLONGFAIL: "TOOLONGFAIL",
+                     DEP_FUNCT: "DEPENDENCY FUNCTION"
+                     }
 
     def __init__(self, outcome=TEST_NOTRUN, msg="", tb=None, default=False):
         self.outcome = outcome
@@ -53,7 +54,7 @@ class Result(object):
         if tb is None:
             self.tb = []
         else:
-            #self.tb = ''.join(format_exception(*tb))
+            # self.tb = ''.join(format_exception(*tb))
             self.tb = format_exception(*tb)
 
     def __str__(self):
@@ -74,23 +75,28 @@ class Result(object):
         else:
             return id(self) != id(other)
 
+
 class TestException(Exception):
     pass
+
 
 class UnsupportedException(TestException):
     def __init__(self, *args):
         self.type = TEST_NOTSUP
         TestException.__init__(self, *args)
 
+
 class FailureException(TestException):
     def __init__(self, *args):
         self.type = TEST_FAIL
         TestException.__init__(self, *args)
 
+
 class WarningException(TestException):
     def __init__(self, *args):
         self.type = TEST_WARN
         TestException.__init__(self, *args)
+
 
 class Test(object):
     _keywords = ["FLAGS", "DEPEND", "CODE"]
@@ -114,14 +120,14 @@ class Test(object):
         else:
             self.fullname = self.name
         self.doc = function.__doc__.split('\n')[0].strip()
-        #self.doc = function.__doc__.strip()
+        # self.doc = function.__doc__.strip()
         self.result = Result()
         self._read_docstr(function.__doc__)
 
     def _read_docstr(self, s):
         """Searches s for 'keyword: list' and stores resulting lists"""
         for key in self._keywords:
-            p = re.compile(r'^\s*' + key +':(.*$)', re.MULTILINE)
+            p = re.compile(r'^\s*' + key + ':(.*$)', re.MULTILINE)
             match = p.search(str(s))
             if match is None:
                 setattr(self, key.lower() + '_list', [])
@@ -142,13 +148,13 @@ class Test(object):
         del d["flags"]
         return d
 
-##     def __cmp__(self, other):
-##         if self.code < other.code:
-##             return -1
-##         elif self.code == other.code:
-##             return 0
-##         else:
-##             return 1
+    ##     def __cmp__(self, other):
+    ##         if self.code < other.code:
+    ##             return -1
+    ##         elif self.code == other.code:
+    ##             return 0
+    ##         else:
+    ##             return 1
 
     def __cmp__(self, other):
         me = self.__re.match(self.code)
@@ -163,7 +169,7 @@ class Test(object):
             return 1
 
     def __str__(self):
-        return "%-8s %s" % ( self.code, self.fullname)
+        return "%-8s %s" % (self.code, self.fullname)
 
     def __repr__(self):
         if self.result.msg:
@@ -181,7 +187,6 @@ class Test(object):
             out += "\n%s" % self._format(self.result.msg, 11, 64)
         return out
 
-
     def _format(self, s, start_col=11, end_col=64):
         s = str(s)
         indent = ' ' * (start_col - 1)
@@ -196,7 +201,7 @@ class Test(object):
             out += ' ' + w
             lout += lw + 1
         return out
-            
+
     def fail(self, msg):
         raise FailureException(msg)
 
@@ -207,9 +212,9 @@ class Test(object):
         raise WarningException(msg)
 
     def __info(self):
-        #return sys.exc_info()
+        # return sys.exc_info()
         exctype, excvalue, tb = sys.exc_info()
-        if sys.platform[:4] == 'java': ## tracebacks look different in Jython
+        if sys.platform[:4] == 'java':  ## tracebacks look different in Jython
             return (exctype, excvalue, tb)
         newtb = tb.tb_next
         if newtb is None:
@@ -222,7 +227,7 @@ class Test(object):
         timeout = getattr(options, 'timeout', 0)
         showtime = getattr(options, 'showtime', True)
 
-        #print "*********Running test %s (%s)" % (self.name, self.code)
+        # print "*********Running test %s (%s)" % (self.name, self.code)
         self.result = self._run_result
         if verbose:
             print repr(self)
@@ -259,7 +264,7 @@ class Test(object):
         # "timeout" time. If "timeout" == 0, don't change the result.
         if timeout > 0 and testtime > timeout:
             print "test took %f seconds, which exceeded the timeout of %d " \
-                "seconds!" % (testtime, timeout)
+                  "seconds!" % (testtime, timeout)
             if self.result == self._pass_result:
                 self.result = self._toolong_result
             else:
@@ -269,13 +274,13 @@ class Test(object):
             print repr(self) + "\n"
 
     def runmulticonn(self, env, options):
-        #print "\nRunning MULTICONN test=%s" % self
+        # print "\nRunning MULTICONN test=%s" % self
 
         num = 1
         testcode = self.code
 
         for (connstr, conn) in env.secondconns:
-            #print "%d: connstr = %s, id = %s" % (num, connstr, conn.id)
+            # print "%d: connstr = %s, id = %s" % (num, connstr, conn.id)
 
             # Set environment's "second connection"
             env.secondconn = conn
@@ -294,8 +299,10 @@ class Test(object):
         env.secondconn = None
         self.code = testcode
 
+
 class Environment(object):
     """Base class for a test environment"""
+
     def __init__(self, opts):
         self.opts = opts
 
@@ -314,10 +321,12 @@ class Environment(object):
     def shutDown(self):
         """Run after each test"""
         pass
-        
+
+
 def _run_filter(test, options):
     """Returns True if test should be run, False if it should be skipped"""
     return True
+
 
 def runtests(tests, options, environment, runfilter=_run_filter):
     """tests is an array of test objects, to be run in order
@@ -331,6 +340,7 @@ def runtests(tests, options, environment, runfilter=_run_filter):
             # Test has already been run in a dependency tree
             pass
 
+
 def _runtree(t, options, environment, runfilter=_run_filter):
     if t.result == TEST_WAIT:
         return
@@ -340,11 +350,11 @@ def _runtree(t, options, environment, runfilter=_run_filter):
         t.result = t._omit_result
         return
     if options.rundeps:
-        runfilter = lambda x, y : True
+        runfilter = lambda x, y: True
     for dep in t.dependencies:
         if dep.result == DEP_FUNCT:
             if (not options.force) and (not dep(t, environment)):
-                t.result = Result(TEST_OMIT, 
+                t.result = Result(TEST_OMIT,
                                   "Dependency function %s failed" %
                                   dep.__name__)
                 return
@@ -357,8 +367,8 @@ def _runtree(t, options, environment, runfilter=_run_filter):
         if dep.result == TEST_WAIT:
             return
         elif (not options.force) and \
-                 (dep.result in [TEST_OMIT, TEST_FAIL, TEST_NOTSUP]):
-            t.result = Result(TEST_OMIT, 
+                (dep.result in [TEST_OMIT, TEST_FAIL, TEST_NOTSUP]):
+            t.result = Result(TEST_OMIT,
                               "Dependency %s had status %s." % \
                               (dep, dep.result))
             return
@@ -373,6 +383,7 @@ def _runtree(t, options, environment, runfilter=_run_filter):
     for t2 in t.afterrun_list:
         _runtree(t2, options, environment)
 
+
 def _import_by_name(name):
     mod = __import__(name)
     components = name.split('.')
@@ -380,8 +391,10 @@ def _import_by_name(name):
         mod = getattr(mod, comp)
     return mod
 
+
 def get_multiconn_testname(name):
     return name + "_MULTICONN"
+
 
 def createtests(testdirs):
     """ Tests are functions that start with "test".  Their docstring must
@@ -429,7 +442,7 @@ def createtests(testdirs):
             raise Exception("%s needs exactly one code" % t.fullname)
         t.code = t.code_list[0]
         if t.code in used_codes:
-            raise Exception("%s trying to use a code already used"  % t.fullname)
+            raise Exception("%s trying to use a code already used" % t.fullname)
         used_codes[t.code] = t
         del t.code_list
     # Check that flags don't contain a code word
@@ -450,7 +463,7 @@ def createtests(testdirs):
                 funct = getattr(mod, d)
                 if not callable(funct):
                     raise Exception("Dependency %s of %s does not exist" %
-                          (d, t.fullname))
+                                    (d, t.fullname))
                 funct.result = t._funct_result
                 t.dependencies.append(funct)
     return tests, flag_dict, used_codes
@@ -481,7 +494,7 @@ def printresults(tests, opts, file=None):
             count[TOOLONG] += 1
         elif t.result == TEST_TOOLONGFAIL:
             count[TOOLONGFAIL] += 1
-    print >> file, "*"*50
+    print >> file, "*" * 50
     for t in tests:
         if t.result == TEST_NOTRUN:
             continue
@@ -495,18 +508,18 @@ def printresults(tests, opts, file=None):
             continue
         if (not opts.showfail) and t.result == TEST_FAIL:
             continue
-        print >> file, t.display(0,0)
-    print >> file, "*"*50
+        print >> file, t.display(0, 0)
+    print >> file, "*" * 50
     if count[NOTRUN]:
         print >> file, "Tests interrupted! Only %i tests run" % \
-              sum(count[SKIP:])
+                       sum(count[SKIP:])
     else:
         print >> file, "Command line asked for %i of %i tests" % \
-              (sum(count[SKIP:]), len(tests))
+                       (sum(count[SKIP:]), len(tests))
     print >> file, "Of those: %i Skipped, %i Failed, %i Warned," \
-          "%i Passed, %i TooLongPass, %i TooLongFail" % \
-          (count[SKIP], count[FAIL], count[WARN], count[PASS], \
-           count[TOOLONG], count[TOOLONGFAIL])
+                   "%i Passed, %i TooLongPass, %i TooLongFail" % \
+                   (count[SKIP], count[FAIL], count[WARN], count[PASS], \
+                    count[TOOLONG], count[TOOLONGFAIL])
 
     # TEMP_FAILURES / TEMP_WARNINGS are the tests that we have yet to fix.
     # COMP3 - Unicode. FIXME
@@ -525,11 +538,11 @@ def printresults(tests, opts, file=None):
     else:
         TEMP_FAILURES += ['LKU1m_MULTICONN', 'LOCK1m_MULTICONN']
 
-    #Appending nfsv3 expected failures
+    # Appending nfsv3 expected failures
     TEMP_FAILURES.extend(['MOUNT_MNT_V1', 'MOUNT_DUMP_V1'])
 
     TEMP_WARNINGS = ['LOCK8c', 'MKBLK', 'MKCHAR', 'RD12', 'SATT2c',
-    'SATT9']
+                     'SATT9']
 
     # The following failures/warnings are expected to fail/warn because of
     # various reasons, as explained below:
@@ -545,16 +558,16 @@ def printresults(tests, opts, file=None):
     # SEC7: This works on an export with '--security-options=sys:krb5'
     # GATTACL: This works with sysctl vfs.nfsrv.nfsv4.acls_return_synthetic=1
     ALLOWED_FAILURES = ['WRT12', 'RD11', 'SATT2c', 'LINK2', 'LOOKBLK', 'LOOKCHAR',
-    'CID1', 'OPEN16', 'SEC7', 'GATTACL']
+                        'CID1', 'OPEN16', 'SEC7', 'GATTACL']
 
     # Missing features
     FSLOCATIONS_FAILURES = ['FSLOC1', 'FSLOC2', 'FSLOC4a', 'FSLOC4b', 'FSLOC5a',
-    'FSLOC6a', 'FSLOC6b', 'FSLOC7a', 'FSLOC8a', 'FSLOC8b']
+                            'FSLOC6a', 'FSLOC6b', 'FSLOC7a', 'FSLOC8a', 'FSLOC8b']
     BLOCKING_LOCKS_WARNINGS = ['LOCK18', 'LOCK19', 'LOCK21', 'LOCK22']
     DELEGATIONS_WARNINGS = ['DELEG1', 'DELEG11', 'DELEG12', 'DELEG13a',
-    'DELEG13b', 'DELEG13c', 'DELEG13d', 'DELEG13e', 'DELEG14', 'DELEG15',
-    'DELEG2', 'DELEG3a', 'DELEG3b', 'DELEG3c', 'DELEG3d', 'DELEG3e', 'DELEG4',
-    'DELEG5', 'DELEG6', 'DELEG7', 'DELEG8', 'DELEG9']
+                            'DELEG13b', 'DELEG13c', 'DELEG13d', 'DELEG13e', 'DELEG14', 'DELEG15',
+                            'DELEG2', 'DELEG3a', 'DELEG3b', 'DELEG3c', 'DELEG3d', 'DELEG3e', 'DELEG4',
+                            'DELEG5', 'DELEG6', 'DELEG7', 'DELEG8', 'DELEG9']
 
     # The following tests have intermittent failures but we are keeping them
     # for now because they have caused panics
@@ -564,7 +577,7 @@ def printresults(tests, opts, file=None):
     EXPECTED_FAILURES = TEMP_FAILURES + FSLOCATIONS_FAILURES + ALLOWED_FAILURES
     EXPECTED_WARNINGS = TEMP_WARNINGS + BLOCKING_LOCKS_WARNINGS + DELEGATIONS_WARNINGS
 
-    print >> file, "*"*50
+    print >> file, "*" * 50
     print >> file, "Isilon results:"
     for t in tests:
         ignore_results = t.code in IGNORE_RESULTS
