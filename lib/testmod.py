@@ -539,7 +539,7 @@ def printresults(tests, opts, file=None):
         TEMP_FAILURES += ['LKU1m_MULTICONN', 'LOCK1m_MULTICONN']
 
     # Appending nfsv3 expected failures
-    TEMP_FAILURES.extend(['MOUNT_MNT_V1', 'MOUNT_DUMP_V1'])
+    TEMP_FAILURES.extend(['MOUNT_MNT_V1', 'MOUNT_DUMP_V1', 'MOUNT_DUMP'])
 
     TEMP_WARNINGS = ['LOCK8c', 'MKBLK', 'MKCHAR', 'RD12', 'SATT2c',
                      'SATT9']
