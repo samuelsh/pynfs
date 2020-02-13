@@ -70,6 +70,21 @@ def testNLM4Lock(t,env):
      res = env.nlm.test(lock, 'cookie', True)
      nlm4check(res.stat, msg="Final TEST of unlocked dir")
 
+
+def testNLM4Cancel(t, env):
+    """ Send LOCK and then CANCEL RPC.
+
+
+    FLAGS: nfsv3 nlm
+    DEPEND: NLM0
+    CODE: NLMCANCEL1
+    """
+    mnt_fh = homedir_fh(env.mc, env.c1)
+    lock = nlm4_lock(t.name, mnt_fh, 'owner', env.pid, 0, 1024)
+    res = env.nlm.lockk(lock, 'cookie', True)
+    lock = env.nlm.cancel(lock, netobj_cookie='cookie123', block=True, exclusive=True)
+
+
 def testNLM4LoopTestExclusive(t,env):
      """ Loop, sending NLM4TEST(Exclusive) messages. This is to find a specific
          LK bug (related to SAS escalation bug 85961).
