@@ -432,3 +432,31 @@ def testNfs3Create_ExclusiveSupported(t, env):
 
 
 ### ToDo: Add basic negative cases.  Beef up coverage
+
+def testNfs3Create_EmptyFileName(t, env):
+    """ Create a file with all _set bits = 0
+        Failure is expected due to bug #76982
+
+    FLAGS: nfsv3 create all
+    DEPEND:
+    CODE: CREATE10
+    """
+    ### Setup Phase ###
+    test_file = b"\0"
+    test_dir = t.name + "_dir_1"
+    mnt_fh = homedir_fh(env.mc, env.c1)
+
+    res = env.c1.mkdir(mnt_fh, test_dir, dir_mode_set=1, dir_mode_val=0777)
+    check(res, msg="MKDIR - test dir %s" % test_dir)
+    test_dir_fh = res.resok.obj.handle.data
+
+    ### Execution Phase ###
+    res = env.c1.create(test_dir_fh, test_file, file_mode_set=0,
+                        file_mode_val=0777)
+    # print "###DEBUG - CREATE_ALLUNSET RESULTS:", res, "\n"
+
+    ### Verification Phase ###
+    check(res, msg="CREATE - file %s" % test_file)
+    res = env.c1.lookup(test_dir_fh, test_file)
+    check(res, msg="LOOKUP - file %s" % test_file)
+    # test_file_fh = res.resok.obj.handle.data
