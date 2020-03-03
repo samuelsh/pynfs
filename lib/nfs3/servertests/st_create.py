@@ -442,7 +442,7 @@ def testNfs3Create_EmptyFileName(t, env):
     CODE: CREATE10
     """
     ### Setup Phase ###
-    test_file = b"\0"
+    test_file = b""
     test_dir = t.name + "_dir_1"
     mnt_fh = homedir_fh(env.mc, env.c1)
 
@@ -456,7 +456,7 @@ def testNfs3Create_EmptyFileName(t, env):
     # print "###DEBUG - CREATE_ALLUNSET RESULTS:", res, "\n"
 
     ### Verification Phase ###
-    check(res, msg="CREATE - file %s" % test_file)
+    check(res, NFS3ERR_ACCES, msg="CREATE - file %s" % test_file)
     res = env.c1.lookup(test_dir_fh, test_file)
-    check(res, msg="LOOKUP - file %s" % test_file)
+    check(res, NFS3ERR_ACCES, msg="LOOKUP - file %s" % test_file)
     # test_file_fh = res.resok.obj.handle.data
