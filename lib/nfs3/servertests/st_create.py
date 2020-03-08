@@ -443,6 +443,8 @@ def testNfs3Create_EmptyFileName(t, env):
     """
     ### Setup Phase ###
     test_file = b""
+    empty_dir = b""
+    playground_file = t.name + "_f_1"
     test_dir = t.name + "_dir_1"
     mnt_fh = homedir_fh(env.mc, env.c1)
 
@@ -450,13 +452,51 @@ def testNfs3Create_EmptyFileName(t, env):
     check(res, msg="MKDIR - test dir %s" % test_dir)
     test_dir_fh = res.resok.obj.handle.data
 
-    ### Execution Phase ###
+    res = env.c1.create(test_dir_fh, playground_file, file_mode_set=0,
+                        file_mode_val=0777)
+    check(res, msg="CREATE - file %s" % playground_file)
+    test_file_fh = res.resok.obj.handle.data
+    
+    # CREATE
     res = env.c1.create(test_dir_fh, test_file, file_mode_set=0,
                         file_mode_val=0777)
-    # print "###DEBUG - CREATE_ALLUNSET RESULTS:", res, "\n"
-
-    ### Verification Phase ###
     check(res, NFS3ERR_ACCES, msg="CREATE - file %s" % test_file)
+    
+    #MKDIR
+    res = env.c1.mkdir(test_dir_fh, empty_dir, dir_mode_set=1, 
+                        dir_mode_val=0777)
+    check(res, NFS3ERR_ACCES, msg="CREATE - dir %s" % empty_dir)
+    print("validated mkdir fails with NFS3ERR_ACCES")
+    
+    #LOOKUP file + dir
+    res = env.c1.lookup(test_dir_fh, empty_dir)
+    check(res, NFS3ERR_ACCES, msg="LOOKUP - dir %s" % empty_dir)
     res = env.c1.lookup(test_dir_fh, test_file)
     check(res, NFS3ERR_ACCES, msg="LOOKUP - file %s" % test_file)
-    # test_file_fh = res.resok.obj.handle.data
+    print("validated lookup fails with NFS3ERR_ACCES")
+    
+    #MKNOD
+    res = env.c1.mknod(test_dir_fh, test_file, NF3FIFO, mode_set=1, mode_val=0777)
+    check(res, NFS3ERR_ACCES, msg="MKNOD - file %s" % test_file)
+    print("validated mknod fails with NFS3ERR_ACCES")
+
+    #RENAME
+    res = env.c1.rename(test_dir_fh, playground_file, test_dir_fh, test_file)
+    check(res, NFS3ERR_ACCES, msg="RENAME - file %s" % test_file)
+    print("validated rename fails with NFS3ERR_ACCES")
+    
+    #LINK
+    res = env.c1.link(test_file_fh, test_dir_fh, test_file)
+    check(res, NFS3ERR_ACCES, msg="LINK - file %s" % test_file)
+    print("validated link fails with NFS3ERR_ACCES")
+        
+    #REMOVE
+    res = env.c1.remove(test_dir_fh, test_file)
+    check(res, NFS3ERR_ACCES, msg="REMOVE - file %s" % test_file)
+    print("validated remove fails with NFS3ERR_ACCES")
+    
+    print("Cleaning-up")
+    res = env.c1.remove(test_dir_fh, playground_file)
+    check(res, msg="REMOVE should have succeeded %s " % playground_file)
+    res = env.c1.rmdir(mnt_fh, test_dir)
+    check(res, msg="RMDIR should have succeeded %s " % test_dir)
