@@ -12,6 +12,7 @@ import rpc
 import os
 import socket
 
+from nfs3.acllib import *
 from nfs3.mountlib import *
 from nfs3.mount_const import *
 from nfs3.mount_type import *
@@ -19,6 +20,7 @@ from nfs3.nfs3lib import *
 from nfs3.rpcblib import *
 from nlm.nlm import *
 from nsm.nsm import *
+
 
 # NFSv3 environment, consists of:
 # 1) RPCB to find protocol ports
@@ -35,16 +37,16 @@ class Environment(testmod.Environment):
 
         # Get protocol port
         rpcb = RpcbClient('client1_pid%i' % os.getpid(), opts.server,
-            sec_list=[self.sec1], opts=opts)
+                          sec_list=[self.sec1], opts=opts)
         mountport = rpcb.rpcb2_getport(MOUNT_PROGRAM, MOUNT_V3)
         self.nfs3port = rpcb.rpcb2_getport(NFS_PROGRAM, NFS_V3)
-        
+
         self.mc = MountClient('client1_pid%i' % os.getpid(), opts.server,
-            mountport, opts.path, sec_list=[self.sec1], opts=opts)
+                              mountport, opts.path, sec_list=[self.sec1], opts=opts)
         self.mc_v1 = MountClient('client2_pid%i' % os.getpid(), opts.server,
-                              mountport, opts.path, sec_list=[self.sec1], opts=opts, mount_version=MOUNT_V1)
+                                 mountport, opts.path, sec_list=[self.sec1], opts=opts, mount_version=MOUNT_V1)
         self.rootclient = MountClient('client1_pid%i' % os.getpid(),
-            opts.server, mountport, opts.path, sec_list=[rootsec], opts=opts)
+                                      opts.server, mountport, opts.path, sec_list=[rootsec], opts=opts)
 
         self.ipv6 = opts.ipv6
 
@@ -54,31 +56,40 @@ class Environment(testmod.Environment):
         if opts.nlm and not opts.ipv6:
             nlmport = rpcb.rpcb2_getport(NLM_PROG, NLM4_VERS)
             self.nlm = NLM4Client('client1_pid%i' % os.getpid(), opts.server,
-               nlmport, opts.path[-1], sec_list=[self.sec1], opts=opts)
+                                  nlmport, opts.path[-1], sec_list=[self.sec1], opts=opts)
         else:
             self.nlm = None
 
         # NSM is similar
         if opts.nsm:
             rpcb_local = RpcbClient('client2_pid%i' % os.getpid(), "localhost",
-                sec_list=[self.sec1], opts=opts)
+                                    sec_list=[self.sec1], opts=opts)
             nsmport = rpcb.rpcb2_getport(SM_PROG, SM_VERS)
             nsmport_local = rpcb_local.rpcb2_getport(SM_PROG, SM_VERS)
             self.nsm = NSMClient('client1_pid%i' % os.getpid(), opts.server,
-                nsmport, sec_list=[self.sec1], opts=opts)
+                                 nsmport, sec_list=[self.sec1], opts=opts)
             self.nsm_local = NSMClient('client2_pid%i' % os.getpid(), "localhost",
-                nsmport_local, sec_list=[self.sec1], opts=opts)
+                                       nsmport_local, sec_list=[self.sec1], opts=opts)
         else:
             self.nsm = None
 
         self.c1 = NFS3Client('client1_pid%i' % os.getpid(),
-            opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts)
+                             opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts)
         self.c2 = NFS3Client('client2_pid%i' % os.getpid(),
-            opts.server, self.nfs3port, opts.path[-1], sec_list=[sec2], opts=opts)
+                             opts.server, self.nfs3port, opts.path[-1], sec_list=[sec2], opts=opts)
         self.c3 = NFS3Client('client3_pid%i' % os.getpid(),
-            opts.server, self.nfs3port, opts.path[-1], sec_list=[sec3], opts=opts)
+                             opts.server, self.nfs3port, opts.path[-1], sec_list=[sec3], opts=opts)
 
-        #if opts.secondserver:
+        self.acl_c2 = ACLClient('client1_pid%i' % os.getpid(),
+                                opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts,
+                                acl_version=NFS_ACL_V2)
+        self.acl_c3 = ACLClient('client1_pid%i' % os.getpid(),
+                                opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts,
+                                acl_version=NFS_ACL_V3)
+        self.acl_c4 = ACLClient('client1_pid%i' % os.getpid(),
+                                opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts,
+                                acl_version=NFS_ACL_V4)
+        # if opts.secondserver:
         #    print "Using secondserver = %s" % opts.secondserver
         #    self.c1node2 = NFS4Client('client1_pid%i' % os.getpid(),
         #                         opts.secondserver, opts.port, opts.path,
@@ -88,12 +99,12 @@ class Environment(testmod.Environment):
         #                         sec_list=[self.sec1], opts=opts)
         #    self.secondconns = [("clientid3", self.c3), ("clientid3-node2", self.c3node2)]
         #    self.secondconn = None
-        #else:
+        # else:
         #    self.secondconns = [("clientid3", self.c3)]
         #    #self.secondconns = []
         #    self.secondconn = None
 
-        self.longname = "a"*512
+        self.longname = "a" * 512
         self.uid = 0
         self.gid = 0
         self.pid = os.getpid()
@@ -106,7 +117,7 @@ class Environment(testmod.Environment):
             return [opts.flavor(), opts.flavor()]
         elif opts.security == 'sys':
             sec1 = opts.flavor(0, opts.machinename, opts.uid, opts.gid, [])
-            sec2 = opts.flavor(0, opts.machinename, opts.uid+1, opts.gid+1, [])
+            sec2 = opts.flavor(0, opts.machinename, opts.uid + 1, opts.gid + 1, [])
             sec3 = opts.flavor(0, opts.machinename, 10, 10, [])
             return [sec1, sec2, sec3]
         elif opts.security.startswith('krb5'):
@@ -143,7 +154,7 @@ class Environment(testmod.Environment):
         res = c.mkdir(mnt_fh, c.homedir, dir_mode_set=1, dir_mode_val=0777)
         checklist(res, [NFS3ERR_EXIST, NFS3_OK],
                   "Trying to create /%s," % '/'.join(self.opts.path))
-        
+
     def finish(self):
         """Run once after all tests are run"""
         if self.opts.nocleanup:
@@ -171,8 +182,10 @@ class Environment(testmod.Environment):
     def get_and_init_secondconn(self, firstconn, default_secondconn=None):
         pass
 
+
 #########################################
 debug_fail = False
+
 
 def check(res, stat=NFS3_OK, msg=None, warnlist=[]):
     if res.status == stat:
@@ -189,6 +202,7 @@ def check(res, stat=NFS3_OK, msg=None, warnlist=[]):
     else:
         raise testmod.FailureException(msg)
 
+
 def checklist(res, statlist, msg=None):
     if res.status in statlist:
         return
@@ -200,20 +214,24 @@ def checklist(res, statlist, msg=None):
     if msg:
         failedop_name = msg
     msg = "%s should return %s, instead got %s" % \
-      (failedop_name, desired, received)
+          (failedop_name, desired, received)
     raise testmod.FailureException(msg)
-    
+
+
 def checkdict(expected, got, translate={}, failmsg=''):
     pass
 
+
 def checkvalid(cond, failmsg):
     if not cond: raise testmod.FailureException(failmsg)
+
 
 def homedir_fh(mc, c):
     mnt_fh = mc.mount_getfh('/' + '/'.join(mc.opts.path[:-1]))
     res = c.lookup(mnt_fh, c.homedir)
     check(res, msg="Could not access homedir %s" % c.homedir)
     return res.object.data
+
 
 def get_invalid_utf8strings():
     pass
