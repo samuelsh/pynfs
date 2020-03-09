@@ -63,6 +63,7 @@ def generate_files():
     use_xdr(dir, 'nfs3.x')
     use_xdr(dir, 'mount.x')
     use_xdr(dir, 'rpcb.x')
+    use_xdr(dir, 'acl.x')
 
     os.chdir(home)
 

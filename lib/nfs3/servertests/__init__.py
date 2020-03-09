@@ -23,4 +23,5 @@ __all__ = [ "st_mount",
             "st_commit",
             "st_nlm",
             "st_nsm",
+            "st_acl"
             ]
