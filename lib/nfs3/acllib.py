@@ -199,7 +199,6 @@ class ACLClient(rpc.RPCClient):
         arg_list = GETXATTRDIR3args(nfs_fh3(file_handle), False)
         return self.acl_call(proc, arg_list)
 
-
     """
     ACLV2 OPERATIONS (NFS2)
     """
