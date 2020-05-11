@@ -199,7 +199,6 @@ class ACLClient(rpc.RPCClient):
         arg_list = GETXATTRDIR3args(nfs_fh3(file_handle), False)
         return self.acl_call(proc, arg_list)
 
-
     """
     ACLV2 OPERATIONS (NFS2)
     """
@@ -240,11 +239,11 @@ class ACLClient(rpc.RPCClient):
     """
 
     def acl4_null(self):
-        return self.acl_call(ACLPROC4_NULL, acl_version=NFS_ACL_V2)
+        return self.acl_call(ACLPROC4_NULL, acl_version=NFS_ACL_V4)
 
     def acl4_getacl(self, file_handle, mask=None):
         arg_list = GETACL4args(nfs_fh4(file_handle), mask)
-        return self.acl_call(ACLPROC4_GETACL, arg_list, acl_version=NFS_ACL_V2)
+        return self.acl_call(ACLPROC4_GETACL, arg_list, acl_version=NFS_ACL_V4)
 
     def acl4_setacl(self, file_handle, acls, mask=0x0):
         """
@@ -256,7 +255,7 @@ class ACLClient(rpc.RPCClient):
         };
         """
         args_list = SETACL4args(nfs_fh4(file_handle), secattr(mask, len(acls), [aclent(*acl) for acl in acls], 0, []))
-        return self.acl_call(ACLPROC4_SETACL, args_list, acl_version=NFS_ACL_V2)
+        return self.acl_call(ACLPROC4_SETACL, args_list, acl_version=NFS_ACL_V4)
 
     """
     UTILITY FUNCTIONS
