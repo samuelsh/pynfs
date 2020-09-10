@@ -79,6 +79,9 @@ class Environment(testmod.Environment):
                              opts.server, self.nfs3port, opts.path[-1], sec_list=[sec2], opts=opts)
         self.c3 = NFS3Client('client3_pid%i' % os.getpid(),
                              opts.server, self.nfs3port, opts.path[-1], sec_list=[sec3], opts=opts)
+        self.c4_resend_sym = NFS3Client('client3_pid%i' % os.getpid(),
+                                        opts.server, self.nfs3port, opts.path[-1], sec_list=[sec3], opts=opts,
+                                        sym_resend=True)
 
         self.acl_c2 = ACLClient('client1_pid%i' % os.getpid(),
                                 opts.server, self.nfs3port, opts.path[-1], sec_list=[self.sec1], opts=opts,

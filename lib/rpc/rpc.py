@@ -22,10 +22,12 @@ import rpc_pack
 # Import security flavors and store valid ones
 from rpcsec.sec_auth_none import SecAuthNone
 from rpcsec.sec_auth_sys import SecAuthSys
-supported = {'none' : SecAuthNone,
-             'sys'  : SecAuthSys }
+
+supported = {'none': SecAuthNone,
+             'sys': SecAuthSys}
 try:
     from rpcsec.sec_auth_gss import SecAuthGss
+
     supported['gss'] = SecAuthGss
 except ImportError:
     pass
@@ -33,10 +35,10 @@ except ImportError:
 RPCVERSION = 2
 
 if hasattr(select, "poll"):
-    _stdmask   = select.POLLERR | select.POLLHUP | select.POLLNVAL
-    _readmask  = select.POLLIN  | _stdmask
+    _stdmask = select.POLLERR | select.POLLHUP | select.POLLNVAL
+    _readmask = select.POLLIN | _stdmask
     _writemask = select.POLLOUT | _stdmask
-    _bothmask  = select.POLLOUT | select.POLLIN | _stdmask
+    _bothmask = select.POLLOUT | select.POLLIN | _stdmask
 else:
     _readmask = 1
     _writemask = 2
@@ -45,9 +47,11 @@ else:
     select.POLLOUT = 2
     select.POLLERR = 4
     select.POLLHUP = select.POLLNVAL = 0
-    
+
+
     class my_poll(object):
         """Emulate select.poll using select.select"""
+
         def __init__(self):
             self._in = []
             self._out = []
@@ -94,10 +98,14 @@ else:
                 mask = select.POLLOUT
                 list.append((fd, mask))
             return list
+
+
     select.poll = my_poll
-        
+
+
 class RPCError(Exception):
     pass
+
 
 class RPCAcceptError(RPCError):
     def __init__(self, a):
@@ -117,6 +125,7 @@ class RPCAcceptError(RPCError):
             return "RPCError: MSG_ACCEPTED: %s" % \
                    accept_stat.get(self.stat, self.stat)
 
+
 class RPCDeniedError(RPCError):
     def __init__(self, r):
         self.stat = r.stat
@@ -133,6 +142,7 @@ class RPCDeniedError(RPCError):
         else:
             return "RPCError: MSG_DENIED: AUTH_ERROR: %s" % \
                    auth_stat.get(self.astat, self.astat)
+
 
 ###################################################
 
@@ -151,6 +161,7 @@ def _recv_all(self, n):
         n -= count
     return data
 
+
 def _recv_record(self):
     """Receive data sent using record marking standard"""
     last = False
@@ -164,28 +175,31 @@ def _recv_record(self):
         data += self.recv_all(count)
     return data
 
+
 def _send_record(self, data, chunksize=2048):
     """Send data using record marking standard"""
     dlen = len(data)
     i = last = 0
     while not last:
-        chunk = data[i:i+chunksize]
+        chunk = data[i:i + chunksize]
         i += chunksize
         if i >= dlen:
             last = 0x80000000L
         mark = struct.pack('>I', last | len(chunk))
         self.sendall(mark + chunk)
 
+
 socket._socketobject.recv_all = _recv_all
 socket._socketobject.recv_record = _recv_record
 socket._socketobject.send_record = _send_record
+
 
 #################################################
 
 class RPCClient(object):
     def __init__(self, host='localhost', port=51423,
                  program=None, version=None, sec_list=None, timeout=15.0,
-                 uselowport=False, usenonrandomxid=False,ipv6=False):
+                 uselowport=False, usenonrandomxid=False, ipv6=False, sym_resend=False):
         self.debug = 0
         t = threading.currentThread()
         self.lock = threading.Lock()
@@ -195,12 +209,13 @@ class RPCClient(object):
         self.uselowport = uselowport
         self._socket = {}
         self.ipv6 = ipv6
-        self.getsocket() # init socket, is this needed here?
+        self.getsocket()  # init socket, is this needed here?
         self.ipaddress = self.socket.getsockname()[0]
-        self._rpcpacker = {t : rpc_pack.RPCPacker()}
-        self._rpcunpacker = {t : rpc_pack.RPCUnpacker('')}
+        self._rpcpacker = {t: rpc_pack.RPCPacker()}
+        self._rpcunpacker = {t: rpc_pack.RPCUnpacker('')}
         self.default_prog = program
         self.default_vers = version
+        self.sym_resend = sym_resend
 
         if usenonrandomxid:
             self.xid = 0L
@@ -213,7 +228,7 @@ class RPCClient(object):
         if sec_list is None:
             sec_list = [SecAuthNone()]
         self.sec_list = sec_list
-        self._init_security(self.sec_list) # Note this can make calls
+        self._init_security(self.sec_list)  # Note this can make calls
         self.security = sec_list[0]
 
     def _init_security(self, list):
@@ -247,10 +262,10 @@ class RPCClient(object):
             else:
                 if not self.ipv6:
                     out = self._socket[t] = socket.socket(socket.AF_INET,
-                                                  socket.SOCK_STREAM)
+                                                          socket.SOCK_STREAM)
                 else:
                     out = self._socket[t] = socket.socket(socket.AF_INET6,
-                                                  socket.SOCK_STREAM)
+                                                          socket.SOCK_STREAM)
                 if self.uselowport:
                     self.bindsocket(out)
                 out.connect((self.remotehost, self.remoteport))
@@ -287,12 +302,12 @@ class RPCClient(object):
 
     class XidCache(object):
         def __init__(self, header, data, cred=None, proc=1):
-            self.header = header # packed call header
-            self.data = data     # secured call data
-            self.cred = cred     # unpacked opaque_auth in header
-            self.rhead = None    # unpacked reply header
-            self.rdata = None    # unsecured reply data
-            self.proc = proc     # unpacked proc from header
+            self.header = header  # packed call header
+            self.data = data  # secured call data
+            self.cred = cred  # unpacked opaque_auth in header
+            self.rhead = None  # unpacked reply header
+            self.rdata = None  # unsecured reply data
+            self.proc = proc  # unpacked proc from header
 
         def __repr__(self):
             return "%s\n%s" % (self.header, self.data)
@@ -304,7 +319,7 @@ class RPCClient(object):
             if xid in self._xidlist[t]: raise
             self._xidlist[t][xid] = self.XidCache(header, data, cred, proc)
         else:
-            self._xidlist[t] = {xid : self.XidCache(header, data, cred, proc)}
+            self._xidlist[t] = {xid: self.XidCache(header, data, cred, proc)}
         self.lock.release()
 
     def get_outstanding_xids(self):
@@ -321,10 +336,10 @@ class RPCClient(object):
             self._socket[t].close()
             if not self.ipv6:
                 out = self._socket[t] = socket.socket(socket.AF_INET,
-                                                  socket.SOCK_STREAM)
+                                                      socket.SOCK_STREAM)
             else:
                 out = self._socket[t] = socket.socket(socket.AF_INET6,
-                                                  socket.SOCK_STREAM)
+                                                      socket.SOCK_STREAM)
             # out.bind
             out.connect((self.remotehost, self.remoteport))
             out.settimeout(self.timeout)
@@ -333,7 +348,7 @@ class RPCClient(object):
         finally:
             self.lock.release()
         return out
-        
+
     def send(self, procedure, data='', program=None, version=None):
         """Send an RPC call to the server
 
@@ -344,7 +359,11 @@ class RPCClient(object):
         if program is None or version is None:
             raise RPCError("Bad program/version: %s/%s" % (program, version))
 
-        xid = self.get_new_xid()
+        if not self.sym_resend:
+            xid = self.get_new_xid()
+        else:
+            xid = self.xid
+            print ("Clinet re-sending request with xid={}".format(self.xid))
         header, cred = self.get_call_header(xid, program, version, procedure)
         data = self.security.secure_data(data, cred)
         try:
@@ -432,7 +451,7 @@ class RPCClient(object):
         xid = self.send(procedure, data, program, version)
         return self.listen(xid)
 
-    def get_new_xid(self): # Thread safe
+    def get_new_xid(self):  # Thread safe
         self.lock.acquire()
         self.xid += 1
         if self.xid >= 0x100000000:
@@ -443,22 +462,22 @@ class RPCClient(object):
 
     # Because some security flavors use partial packing info to determine
     # verf, can't call packer.pack_rpc_msg.
-    def get_call_header(self, xid, prog, vers, proc): # THREAD SAFE
+    def get_call_header(self, xid, prog, vers, proc):  # THREAD SAFE
         p = self.getrpcpacker()
         p.reset()
         cred = self.security.make_cred()
         p.pack_uint(xid)
         p.pack_enum(CALL)
-	p.pack_uint(RPCVERSION)
-	p.pack_uint(prog)
-	p.pack_uint(vers)
-	p.pack_uint(proc)
-	p.pack_opaque_auth(cred)
+        p.pack_uint(RPCVERSION)
+        p.pack_uint(prog)
+        p.pack_uint(vers)
+        p.pack_uint(proc)
+        p.pack_opaque_auth(cred)
         verf = self.security.make_verf(p.get_buffer())
         p.pack_opaque_auth(verf)
         return p.get_buffer(), cred
 
-    def check_reply(self, cache_data): # THREAD SAFE
+    def check_reply(self, cache_data):  # THREAD SAFE
         """Looks at rpc_msg reply and raises error if necessary
 
         xid has already been checked
@@ -472,13 +491,14 @@ class RPCClient(object):
             raise RPCDeniedError(msg.rreply)
         elif msg.areply.reply_data.stat != SUCCESS:
             raise RPCAcceptError(msg.areply)
-        #STUB
+        # STUB
         self.security.check_verf(msg.areply.verf, cache_data.cred)
-            
+
+
 ###################################################
 
 class Server(object):
-    def __init__(self, host='', port=51423, name="SERVER",ipv6=False):
+    def __init__(self, host='', port=51423, name="SERVER", ipv6=False):
         if ipv6:
             self.s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         else:
@@ -516,7 +536,7 @@ class Server(object):
                     # This must be last since may call close
                     if event & select.POLLIN:
                         if fd == self.s.fileno():
-                            self.event_connect(fd,debug)
+                            self.event_connect(fd, debug)
                         else:
                             data = self.sockets[fd].recv(4096)
                             if data:
@@ -524,13 +544,14 @@ class Server(object):
                             else:
                                 self.event_close(fd)
 
+
 class RPCServer(Server):
-    def __init__(self, prog=10, vers=4, host='', port=51423,ipv6=False):
+    def __init__(self, prog=10, vers=4, host='', port=51423, ipv6=False):
         Server.__init__(self, host, port, ipv6)
-        self.rpcpacker =  rpc_pack.RPCPacker()
+        self.rpcpacker = rpc_pack.RPCPacker()
         self.rpcunpacker = rpc_pack.RPCUnpacker('')
         self.prog = prog
-        self.vers = vers # FRED - this could be more general
+        self.vers = vers  # FRED - this could be more general
         self.security = {AUTH_NONE: SecAuthNone(),
                          AUTH_SYS: SecAuthSys(),
                          }
@@ -538,8 +559,8 @@ class RPCServer(Server):
             self.security[RPCSEC_GSS] = SecAuthGss()
         self.readbufs = {}
         self.writebufs = {}
-        self.packetbufs = {} # store packets read until have a whole record
-        self.recordbufs = {} # write buffer for outgoing records
+        self.packetbufs = {}  # store packets read until have a whole record
+        self.recordbufs = {}  # write buffer for outgoing records
         self.sockets = {}
         self.s.listen(5)
 
@@ -548,7 +569,7 @@ class RPCServer(Server):
             return GARBAGE_ARGS, ''
         else:
             return SUCCESS, ''
-    
+
     def event_connect(self, fd, debug=0):
         csock, caddr = self.s.accept()
         csock.setblocking(0)
@@ -563,7 +584,7 @@ class RPCServer(Server):
         self.packetbufs[cfd] = []
         self.recordbufs[cfd] = []
         self.sockets[cfd] = csock
-        
+
     def event_read(self, fd, data, debug=0):
         """Reads incoming record marked packets
 
@@ -583,7 +604,7 @@ class RPCServer(Server):
                     self.packetbufs[fd].append(str[4:4 + packetlen])
                     self.readbufs[fd] = str[4 + packetlen:]
                     if self.readbufs[fd]:
-                        loop = True # We've received data past last 
+                        loop = True  # We've received data past last
                     if last:
                         if debug: print "SERVER: Received record from %i" % fd
                         recv_data = ''.join(self.packetbufs[fd])
@@ -626,12 +647,12 @@ class RPCServer(Server):
     def event_command(self, cfd, comm, debug=0):
         if debug:
             print "SERVER: command = %i, cfd = %i" % (comm, cfd)
-        if comm == 0: # Turn off server
+        if comm == 0:  # Turn off server
             self.compute_reply = lambda x: None
-            return '\0'*4
-        elif comm == 1: # Turn server on
+            return '\0' * 4
+        elif comm == 1:  # Turn server on
             self.compute_reply = self.__compute_reply_orig
-            return '\0'*4
+            return '\0' * 4
 
     def event_close(self, fd, debug=0):
         if debug:
@@ -646,7 +667,7 @@ class RPCServer(Server):
         del self.packetbufs[fd]
         del self.recordbufs[fd]
         del self.sockets[fd]
-        
+
     event_hup = event_error
 
     def compute_reply(self, recv_data):
@@ -664,7 +685,7 @@ class RPCServer(Server):
         call = recv_msg.body.cbody
         cred = call.cred
         flavor = cred.flavor
-        #print call
+        # print call
         reply_stat = MSG_ACCEPTED
         areply = rreply = None
         proc_response = ''
@@ -672,7 +693,7 @@ class RPCServer(Server):
             rreply = rejected_reply(RPC_MISMATCH,
                                     rpc_mismatch_info(RPCVERSION, RPCVERSION))
             reply_stat = MSG_DENIED
-        elif flavor not in self.security: # STUB
+        elif flavor not in self.security:  # STUB
             # Auth checking
             rreply = rejected_reply(AUTH_ERROR, astat=AUTH_FAILED)
             reply_stat = MSG_DENIED

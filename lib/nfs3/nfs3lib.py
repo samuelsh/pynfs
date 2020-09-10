@@ -11,12 +11,14 @@ import struct
 import socket
 import sys
 
-AuthSys = rpc.SecAuthSys(0,'jupiter',103558,100,[])
+AuthSys = rpc.SecAuthSys(0, 'jupiter', 103558, 100, [])
+
 
 class NFS3Exception(rpc.RPCError):
     pass
 
-#An NFS procedure returned an error
+
+# An NFS procedure returned an error
 class BadNFS3Res(NFS3Exception):
     def __init__(self, errcode, msg=None):
         self.errcode = errcode
@@ -24,25 +26,28 @@ class BadNFS3Res(NFS3Exception):
             self.msg = msg + ': '
         else:
             self.msg = ''
+
     def __str__(self):
         return self.msg + "should return NFS3_OK, instead got %s" % \
-            (nfsstat3[self.errcode])
+               (nfsstat3[self.errcode])
+
 
 class NFS3Client(rpc.RPCClient):
     def __init__(self, id, host='localhost', port=300, homedir=['pynfs'],
-            sec_list=[AuthSys], opts = None):
+                 sec_list=[AuthSys], opts=None, sym_resend=False):
         self.ipv6 = getattr(opts, "ipv6", False)
         self.packer = NFS3Packer()
         self.unpacker = NFS3Unpacker('')
         self.homedir = homedir
         self.id = id
         self.opts = opts
-        #uselowport = True
+        # uselowport = True
         uselowport = getattr(opts, "secure", False)
         rpc.RPCClient.__init__(self, host, port, program=NFS_PROGRAM,
-            version=NFS_V3, sec_list=sec_list, uselowport=uselowport,ipv6=self.ipv6)
+                               version=NFS_V3, sec_list=sec_list, uselowport=uselowport, ipv6=self.ipv6,
+                               sym_resend=sym_resend)
         self.server_address = (host, port)
-        
+
     def nfs3_pack(self, procedure, data):
         p = self.packer
 
@@ -153,7 +158,7 @@ class NFS3Client(rpc.RPCClient):
         p.reset()
 
         self.nfs3_pack(procedure, data)
-        
+
         # Make Call
         res = self.call(procedure, p.get_buffer())
 
@@ -168,24 +173,24 @@ class NFS3Client(rpc.RPCClient):
     """
     BASIC NFS3 OPERATIONS
     """
-    
+
     def null(self):
         return self.nfs3_call(NFSPROC3_NULL)
-    
+
     def getattr(self, file_handle=None):
         arg_list = nfs_fh3(file_handle)
         return self.nfs3_call(NFSPROC3_GETATTR, arg_list)
-    
-    def setattr(self, file_handle=None, mode_set=0, mode_val=0777, 
-                uid_set=0, uid_val=None, gid_set=0, gid_val=None, 
-                size_set=0, size_val=0, atime_set=0, atime_val=None, 
-                mtime_set=0, mtime_val=None, 
+
+    def setattr(self, file_handle=None, mode_set=0, mode_val=0777,
+                uid_set=0, uid_val=None, gid_set=0, gid_val=None,
+                size_set=0, size_val=0, atime_set=0, atime_val=None,
+                mtime_set=0, mtime_val=None,
                 guard_check=False, guard_time=None):
         if uid_val is None:
             uid_val = self.opts.uid
         if gid_val is None:
             gid_val = self.opts.gid
-        curr_time=("%s" % time.time()).split('.')
+        curr_time = ("%s" % time.time()).split('.')
         if atime_val is None:
             atime_val = nfstime3(curr_time[0], curr_time[1])
         if mtime_val is None:
@@ -193,46 +198,46 @@ class NFS3Client(rpc.RPCClient):
         if guard_time is None:
             guard_time = nfstime3(curr_time[0], curr_time[1])
         arg_list = setattr3args(nfs_fh3(file_handle),
-            sattr3(
-                set_uint32(mode_set, mode_val),
-                set_uint32(uid_set, uid_val),
-                set_uint32(gid_set, gid_val), 
-                set_uint64(size_set, size_val), 
-                set_time(atime_set, atime_val), 
-                set_time(mtime_set, mtime_val)
-            ),
-            sattrguard3(guard_check, guard_time))
+                                sattr3(
+                                    set_uint32(mode_set, mode_val),
+                                    set_uint32(uid_set, uid_val),
+                                    set_uint32(gid_set, gid_val),
+                                    set_uint64(size_set, size_val),
+                                    set_time(atime_set, atime_val),
+                                    set_time(mtime_set, mtime_val)
+                                ),
+                                sattrguard3(guard_check, guard_time))
         return self.nfs3_call(NFSPROC3_SETATTR, arg_list)
-    
+
     def lookup(self, dir_fh=None, name=None):
         arg_list = diropargs3(nfs_fh3(dir_fh), name)
         return self.nfs3_call(NFSPROC3_LOOKUP, arg_list)
-    
+
     def access(self, file_handle=None, access=None):
         arg_list = access3args(nfs_fh3(file_handle), access)
         return self.nfs3_call(NFSPROC3_ACCESS, arg_list)
-    
+
     def readlink(self, link_fh=None):
         arg_list = nfs_fh3(link_fh)
         return self.nfs3_call(NFSPROC3_READLINK, arg_list)
-    
+
     def read(self, file_handle=None, offset=0, count=0):
         arg_list = read3args(nfs_fh3(file_handle), offset, count)
         return self.nfs3_call(NFSPROC3_READ, arg_list)
-    
-    def write(self, file_handle=None, offset=0, count=0, stable=None, 
+
+    def write(self, file_handle=None, offset=0, count=0, stable=None,
               data=None):
-        arg_list = write3args(nfs_fh3(file_handle), offset, count, 
+        arg_list = write3args(nfs_fh3(file_handle), offset, count,
                               stable, data)
         return self.nfs3_call(NFSPROC3_WRITE, arg_list)
-    
-    def create(self, dir_fh=None, name=None, nfs3_mode=UNCHECKED, 
-               file_mode_set=0, file_mode_val=0777, uid_set=0, uid_val=None, 
-               gid_set=0, gid_val=None, size_set=0, size_val=0, 
+
+    def create(self, dir_fh=None, name=None, nfs3_mode=UNCHECKED,
+               file_mode_set=0, file_mode_val=0777, uid_set=0, uid_val=None,
+               gid_set=0, gid_val=None, size_set=0, size_val=0,
                atime_set=0, atime_val=None, mtime_set=0, mtime_val=None,
                exclusive_verf=0):
         ### ToDo: add input validation?
-        curr_time=("%s" % time.time()).split('.')
+        curr_time = ("%s" % time.time()).split('.')
         if atime_val is None:
             atime_val = nfstime3(curr_time[0], curr_time[1])
         if mtime_val is None:
@@ -242,27 +247,27 @@ class NFS3Client(rpc.RPCClient):
         if gid_val is None:
             gid_val = self.opts.gid
 
-        arg_list=create3args(
+        arg_list = create3args(
             diropargs3(nfs_fh3(dir_fh), name),
             createhow3(nfs3_mode,
-                sattr3(
-                    set_uint32(file_mode_set, file_mode_val),
-                    set_uint32(uid_set, uid_val),
-                    set_uint32(gid_set, gid_val),
-                    set_uint64(size_set, size_val),
-                    set_time(atime_set, atime_val),
-                    set_time(mtime_set, mtime_val)
-                ),
-                exclusive_verf
-            ))
+                       sattr3(
+                           set_uint32(file_mode_set, file_mode_val),
+                           set_uint32(uid_set, uid_val),
+                           set_uint32(gid_set, gid_val),
+                           set_uint64(size_set, size_val),
+                           set_time(atime_set, atime_val),
+                           set_time(mtime_set, mtime_val)
+                       ),
+                       exclusive_verf
+                       ))
         return self.nfs3_call(NFSPROC3_CREATE, arg_list)
-    
-    def mkdir(self, parent_fh=None, name=None, 
-               dir_mode_set=0, dir_mode_val=0777, uid_set=0, uid_val=None, 
-               gid_set=0, gid_val=None, size_set=0, size_val=0, 
-               atime_set=0, atime_val=None, mtime_set=0, mtime_val=None):
+
+    def mkdir(self, parent_fh=None, name=None,
+              dir_mode_set=0, dir_mode_val=0777, uid_set=0, uid_val=None,
+              gid_set=0, gid_val=None, size_set=0, size_val=0,
+              atime_set=0, atime_val=None, mtime_set=0, mtime_val=None):
         ### ToDo: add input validation?
-        curr_time=("%s" % time.time()).split('.')
+        curr_time = ("%s" % time.time()).split('.')
         if atime_val is None:
             atime_val = nfstime3(curr_time[0], curr_time[1])
         if mtime_val is None:
@@ -272,23 +277,23 @@ class NFS3Client(rpc.RPCClient):
         if gid_val is None:
             gid_val = self.opts.gid
         arg_list = mkdir3args(diropargs3(nfs_fh3(parent_fh), name),
-            sattr3(
-                set_uint32(dir_mode_set, dir_mode_val),
-                set_uint32(uid_set, uid_val),
-                set_uint32(gid_set, gid_val),
-                set_uint64(size_set, size_val),
-                set_time(atime_set, atime_val),
-                set_time(mtime_set, mtime_val)
-            ))
+                              sattr3(
+                                  set_uint32(dir_mode_set, dir_mode_val),
+                                  set_uint32(uid_set, uid_val),
+                                  set_uint32(gid_set, gid_val),
+                                  set_uint64(size_set, size_val),
+                                  set_time(atime_set, atime_val),
+                                  set_time(mtime_set, mtime_val)
+                              ))
         return self.nfs3_call(NFSPROC3_MKDIR, arg_list)
-    
+
     def symlink(self, dir_fh=None, link_name=None,
-               mode_set=0, mode_val=0777, uid_set=0, uid_val=None, 
-               gid_set=0, gid_val=None, size_set=0, size_val=0, 
-               atime_set=0, atime_val=None, mtime_set=0, mtime_val=None,
-               data=None):
+                mode_set=0, mode_val=0777, uid_set=0, uid_val=None,
+                gid_set=0, gid_val=None, size_set=0, size_val=0,
+                atime_set=0, atime_val=None, mtime_set=0, mtime_val=None,
+                data=None):
         ### ToDo: add input validation?
-        curr_time=("%s" % time.time()).split('.')
+        curr_time = ("%s" % time.time()).split('.')
         if atime_val is None:
             atime_val = nfstime3(curr_time[0], curr_time[1])
         if mtime_val is None:
@@ -298,7 +303,7 @@ class NFS3Client(rpc.RPCClient):
         if gid_val is None:
             gid_val = self.opts.gid
         arg_list = symlink3args(
-            diropargs3(nfs_fh3(dir_fh), link_name), 
+            diropargs3(nfs_fh3(dir_fh), link_name),
             symlinkdata3(
                 sattr3(
                     set_uint32(mode_set, mode_val),
@@ -311,12 +316,12 @@ class NFS3Client(rpc.RPCClient):
                 data
             ))
         return self.nfs3_call(NFSPROC3_SYMLINK, arg_list)
-    
-    def mknod(self, dir_fh=None, name=None, type=None, 
-              mode_set=0, mode_val=0777, uid_set=0, uid_val=None, 
-              gid_set=0, gid_val=None, size_set=0, size_val=0, 
+
+    def mknod(self, dir_fh=None, name=None, type=None,
+              mode_set=0, mode_val=0777, uid_set=0, uid_val=None,
+              gid_set=0, gid_val=None, size_set=0, size_val=0,
               atime_set=0, atime_val=None, mtime_set=0, mtime_val=None):
-        curr_time=("%s" % time.time()).split('.')
+        curr_time = ("%s" % time.time()).split('.')
         if atime_val is None:
             atime_val = nfstime3(curr_time[0], curr_time[1])
         if mtime_val is None:
@@ -333,56 +338,56 @@ class NFS3Client(rpc.RPCClient):
             set_time(atime_set, atime_val),
             set_time(mtime_set, mtime_val)
         )
-        arg_list=mknod3args(diropargs3(nfs_fh3(dir_fh), name), 
-            mknoddata3(type, devicedata3(attr, specdata3(1, 2)), attr))
+        arg_list = mknod3args(diropargs3(nfs_fh3(dir_fh), name),
+                              mknoddata3(type, devicedata3(attr, specdata3(1, 2)), attr))
         return self.nfs3_call(NFSPROC3_MKNOD, arg_list)
-    
+
     def remove(self, dir_handle=None, file_name=None):
-        arg_list=diropargs3(nfs_fh3(dir_handle), file_name)
+        arg_list = diropargs3(nfs_fh3(dir_handle), file_name)
         return self.nfs3_call(NFSPROC3_REMOVE, arg_list)
-    
+
     def rmdir(self, parent_dir_handle=None, target_dir_name=None):
-        arg_list=diropargs3(nfs_fh3(parent_dir_handle), target_dir_name)
+        arg_list = diropargs3(nfs_fh3(parent_dir_handle), target_dir_name)
         return self.nfs3_call(NFSPROC3_RMDIR, arg_list)
-    
+
     def rename(self, old_parent_fh=None, old_file=None, new_parent_fh=None,
                new_file=None):
-        arg_list=rename3args(diropargs3(nfs_fh3(old_parent_fh), old_file),
-                         diropargs3(nfs_fh3(new_parent_fh), new_file))
+        arg_list = rename3args(diropargs3(nfs_fh3(old_parent_fh), old_file),
+                               diropargs3(nfs_fh3(new_parent_fh), new_file))
         return self.nfs3_call(NFSPROC3_RENAME, arg_list)
-    
+
     def link(self, target_file_fh=None, dir_fh=None, link_name=None):
-        arg_list=link3args(nfs_fh3(target_file_fh), diropargs3(nfs_fh3(dir_fh), link_name))
+        arg_list = link3args(nfs_fh3(target_file_fh), diropargs3(nfs_fh3(dir_fh), link_name))
         return self.nfs3_call(NFSPROC3_LINK, arg_list)
-    
+
     def readdir(self, dir_fh=None, cookie=0, cookieverf='0', count=0):
         if type(cookieverf) is not str:
             cookieverf = cookieverf.__str__()
         arg_list = readdir3args(nfs_fh3(dir_fh), cookie, cookieverf, count)
         return self.nfs3_call(NFSPROC3_READDIR, arg_list)
-    
+
     def readdirplus(self, dir_fh=None, cookie=0, cookieverf='0', dircount=0, maxcount=0):
         if type(cookieverf) is not str:
             cookieverf = cookieverf.__str__()
         arg_list = readdirplus3args(nfs_fh3(dir_fh), cookie, cookieverf, dircount, maxcount)
         return self.nfs3_call(NFSPROC3_READDIRPLUS, arg_list)
-    
+
     def fsstat(self, file_fh=None):
-        arg_list=nfs_fh3(file_fh)
+        arg_list = nfs_fh3(file_fh)
         return self.nfs3_call(NFSPROC3_FSSTAT, arg_list)
-    
+
     def fsinfo(self, file_fh=None):
-        arg_list=nfs_fh3(file_fh)
+        arg_list = nfs_fh3(file_fh)
         return self.nfs3_call(NFSPROC3_FSINFO, arg_list)
-    
+
     def pathconf(self, file_fh=None):
-        arg_list=nfs_fh3(file_fh)
+        arg_list = nfs_fh3(file_fh)
         return self.nfs3_call(NFSPROC3_PATHCONF, arg_list)
-    
+
     def commit(self, file_fh=None, offset=0, count=0):
-        arg_list=commit3args(nfs_fh3(file_fh), offset, count)
+        arg_list = commit3args(nfs_fh3(file_fh), offset, count)
         return self.nfs3_call(NFSPROC3_COMMIT, arg_list)
-    
+
     """
     UTILITY FUNCTIONS
     """
@@ -394,7 +399,7 @@ class NFS3Client(rpc.RPCClient):
             return
         raise BadNFS3Res(res.status, msg)
 
-    def do_readdir(self, dir_fh, cookie=0, cookieverf = '0', maxcount=4096):
+    def do_readdir(self, dir_fh, cookie=0, cookieverf='0', maxcount=4096):
         """ Since we may not get the whole directory listing in one readdir
         request, loop until we do.  For each request result, create a flat
         list with <entry3> objects.
